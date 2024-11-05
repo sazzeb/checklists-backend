@@ -1,0 +1,59 @@
+version: '3.8'
+services:
+  service:
+    build: .
+    container_name: checklist
+    hostname: checklist
+    env_file:
+      - .env
+    ports:
+      - 9009:9009
+    networks:
+      - checklist
+    volumes:
+      - ./src/:/app/src/
+      - .env/:/app/.env
+    restart: always
+    depends_on:
+      - redis
+    links:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9009"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:8.0-M02-alpine
+    container_name: redis
+    ports:
+      - '${FORWARD_REDIS_PORT:-6379}:6379'
+    volumes:
+      - ./data:/data
+    networks:
+      - checklist
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+#  nginx:
+#    build:
+#      context: ./nginx
+#      dockerfile: Dockerfile
+#    ports:
+#      - "9009:9009"  # Map host port 9009 to container port 9009
+#    volumes:
+#      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro  # Mount the custom nginx.conf file
+#    networks:
+#      - checklist
+#    depends_on:
+#      - service
+#      - redis
+#    restart: always
+
+networks:
+  checklist:
+    driver: bridge
